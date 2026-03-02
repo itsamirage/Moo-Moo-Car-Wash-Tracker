@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moo Moo Checker – Find the Least Busy Car Wash</title>
+  <meta name="description" content="Check busyness levels at Moo Moo Express Car Wash locations across Central Ohio." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #fefce8 0%, #fffbeb 30%, #fefefe 60%);
+      font-family: 'DM Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      padding: 32px 24px 24px;
+      text-align: center;
+      position: relative;
+    }
+    .spot { position: absolute; border-radius: 50%; }
+    .spot-1 { top: 20px; left: 10%; width: 40px; height: 30px; background: #29292515; transform: rotate(-15deg); }
+    .spot-2 { top: 60px; right: 8%; width: 25px; height: 18px; background: #29292510; transform: rotate(25deg); }
+    .spot-3 { top: 40px; right: 25%; width: 15px; height: 12px; background: #29292508; transform: rotate(-5deg); }
+    .header h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 32px; font-weight: 900; color: #1c1917;
+      letter-spacing: -0.02em; margin: 8px 0 4px;
+    }
+    .header .subtitle { font-size: 14px; color: #78716c; font-weight: 500; }
+    .header .time-info { font-size: 12px; color: #a8a29e; margin-top: 6px; }
+
+    .best-banner {
+      margin: 0 16px 20px; padding: 16px 20px;
+      background: linear-gradient(135deg, #292524, #44403c);
+      border-radius: 14px; display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 4px 20px rgba(41,37,36,0.2);
+    }
+    .best-icon {
+      width: 44px; height: 44px; background: #fefce8; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .best-label { font-size: 11px; color: #a8a29e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .best-name { font-size: 16px; color: #fefce8; font-weight: 700; font-family: 'Playfair Display', Georgia, serif; margin-top: 2px; }
+    .best-name .dist { font-size: 12px; color: #a8a29e; font-weight: 400; margin-left: 8px; font-family: 'DM Sans', sans-serif; }
+    .best-wait { font-size: 12px; color: #d6d3d1; margin-top: 2px; }
+
+    .controls { padding: 0 16px; margin-bottom: 16px; display: flex; gap: 8px; }
+    .search-wrap { flex: 1; position: relative; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #a8a29e; }
+    .search-input {
+      width: 100%; padding: 10px 12px 10px 36px;
+      border: 2px solid #e7e5e4; border-radius: 12px;
+      font-size: 14px; font-family: 'DM Sans', sans-serif;
+      background: #fffffe; color: #1c1917; outline: none;
+    }
+    .sort-btns { display: flex; gap: 4px; }
+    .sort-btn {
+      padding: 8px 12px; border: 2px solid #e7e5e4; border-radius: 10px;
+      background: #fffffe; color: #78716c; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap;
+    }
+    .sort-btn.active { border-color: #292524; background: #292524; color: #fefce8; }
+
+    .geo-warning {
+      margin: 0 16px 12px; padding: 10px 14px;
+      background: #fffbeb; border-radius: 10px;
+      font-size: 12px; color: #92400e; display: none; align-items: center; gap: 8px;
+    }
+    .geo-warning.show { display: flex; }
+
+    .cards { padding: 0 16px 32px; display: flex; flex-direction: column; gap: 10px; }
+
+    .card {
+      background: #fffffe; border-radius: 16px; border: 2px solid #e7e5e4;
+      padding: 20px; cursor: pointer; transition: all 0.25s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .card.expanded { box-shadow: 0 8px 30px rgba(0,0,0,0.08); transform: scale(1.01); }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .card-left { flex: 1; }
+    .card-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .card-name { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 700; color: #1c1917; }
+    .card-dist { font-size: 12px; color: #78716c; background: #f5f5f4; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+    .card-addr { font-size: 13px; color: #78716c; }
+    .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .wait-est { font-size: 11px; color: #a8a29e; }
+
+    .busy-bar { margin-top: 14px; height: 6px; background: #f5f5f4; border-radius: 99px; overflow: hidden; }
+    .busy-bar-fill { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
+
+    .expanded-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid #f5f5f4; display: none; }
+    .card.expanded .expanded-section { display: block; }
+    .forecast-label { font-size: 12px; font-weight: 600; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+    .forecast-bars { display: flex; align-items: flex-end; gap: 3px; height: 80px; }
+    .forecast-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .forecast-bar { width: 100%; max-width: 28px; border-radius: 4px 4px 2px 2px; transition: height 0.5s ease; position: relative; }
+    .forecast-bar.now { border: 2px solid #292524; }
+    .forecast-bar .now-label {
+      position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+      font-size: 9px; font-weight: 800; color: #292524; white-space: nowrap;
+    }
+    .forecast-hour { font-size: 9px; color: #a8a29e; }
+    .forecast-hour.now { color: #292524; font-weight: 700; }
+
+    .best-time-tip {
+      margin-top: 16px; padding: 10px 14px; background: #ecfdf5;
+      border-radius: 10px; display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: #065f46; font-weight: 500;
+    }
+    .card-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .card-action {
+      font-size: 12px; color: #78716c; text-decoration: none;
+      padding: 6px 12px; background: #f5f5f4; border-radius: 8px;
+    }
+
+    .footer { padding: 20px 16px 32px; text-align: center; border-top: 1px solid #f5f5f4; }
+    .footer p { font-size: 11px; color: #d6d3d1; margin-top: 4px; }
+
+    .empty-msg { text-align: center; color: #a8a29e; font-size: 14px; padding: 40px 0; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="spot spot-1"></div>
+  <div class="spot spot-2"></div>
+  <div class="spot spot-3"></div>
+  <svg viewBox="0 0 64 64" width="32" height="32" style="display:inline-block">
+    <ellipse cx="32" cy="38" rx="20" ry="16" fill="#fefce8" stroke="#292524" stroke-width="2"/>
+    <ellipse cx="32" cy="44" rx="12" ry="9" fill="#fde68a" stroke="#292524" stroke-width="1.5"/>
+    <circle cx="28" cy="44" r="2" fill="#292524"/><circle cx="36" cy="44" r="2" fill="#292524"/>
+    <circle cx="24" cy="32" r="4" fill="#292524"/><circle cx="40" cy="32" r="4" fill="#292524"/>
+    <circle cx="24.5" cy="31.5" r="1.5" fill="white"/><circle cx="40.5" cy="31.5" r="1.5" fill="white"/>
+    <ellipse cx="16" cy="28" rx="7" ry="5" fill="#fecaca" stroke="#292524" stroke-width="1.5"/>
+    <ellipse cx="48" cy="28" rx="7" ry="5" fill="#fecaca" stroke="#292524" stroke-width="1.5"/>
+    <ellipse cx="22" cy="22" rx="3" ry="6" fill="#d6d3d1" stroke="#292524" stroke-width="1.5" transform="rotate(-15,22,22)"/>
+    <ellipse cx="42" cy="22" rx="3" ry="6" fill="#292524" stroke="#292524" stroke-width="1.5" transform="rotate(15,42,22)"/>
+  </svg>
+  <h1>Moo Moo Checker</h1>
+  <p class="subtitle" id="subtitle">Find the least busy wash near you</p>
+  <p class="time-info" id="timeInfo"></p>
+</div>
+
+<div class="best-banner" id="bestBanner" style="display:none">
+  <div class="best-icon">🏆</div>
+  <div>
+    <p class="best-label">Best right now</p>
+    <p class="best-name" id="bestName"></p>
+    <p class="best-wait" id="bestWait"></p>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="Search locations..." />
+  </div>
+  <div class="sort-btns" id="sortBtns">
+    <button class="sort-btn active" data-sort="busyness">Least Busy</button>
+    <button class="sort-btn" data-sort="name">A–Z</button>
+  </div>
+</div>
+
+<div class="geo-warning" id="geoWarning">
+  <span>📍</span>
+  <span>Location access denied. Enable it to sort by distance and see nearby locations first.</span>
+</div>
+
+<div class="cards" id="cards"></div>
+<p class="empty-msg" id="emptyMsg">No locations found</p>
+
+<div class="footer">
+  <p>Busyness estimates based on typical traffic patterns · Not affiliated with Moo Moo Express Car Wash</p>
+  <p>Tap a location for hourly forecast & directions</p>
+</div>
+
+<script>
+const LOCATIONS = [
+  { id:1, name:"Grandview", address:"904 W 5th Ave, Columbus", lat:39.9862, lng:-83.0382, phone:"(614) 504-8855" },
+  { id:2, name:"Dublin / Sawmill", address:"7630 Sawmill Rd, Columbus", lat:40.0878, lng:-83.0872, phone:"(614) 389-4693" },
+  { id:3, name:"Hilliard", address:"1944 Hilliard-Rome Rd, Hilliard", lat:39.9542, lng:-83.1581, phone:"(614) 541-2292" },
+  { id:4, name:"Broad St", address:"6300 E Broad St, Columbus", lat:39.9688, lng:-82.841, phone:"(614) 575-9274" },
+  { id:5, name:"Groveport", address:"3981 S Hamilton Rd, Columbus", lat:39.8762, lng:-82.8828, phone:"(614) 697-2833" },
+  { id:6, name:"South High", address:"3580 South High St, Columbus", lat:39.9055, lng:-82.9872, phone:"(614) 665-9274" },
+  { id:7, name:"Westerville", address:"540 Polaris Pkwy, Westerville", lat:40.1148, lng:-82.9497, phone:"(614) 751-9274" },
+  { id:8, name:"Reynoldsburg", address:"6555 E Main St, Reynoldsburg", lat:39.9571, lng:-82.8001, phone:"(614) 751-9274" },
+  { id:9, name:"Grove City \u2013 Stringtown", address:"2190 Stringtown Rd, Grove City", lat:39.8812, lng:-83.0819, phone:"(614) 372-6430" },
+  { id:18, name:"Grove City South", address:"2615 London Groveport Rd, Grove City", lat:39.8548, lng:-83.0477, phone:"(380) 666-1012" },
+  { id:19, name:"Grove City \u2013 Turnberry", address:"3019 Turnberry Ct, Grove City", lat:39.8714, lng:-83.0912, phone:"(614) 297-4770" },
+  { id:10, name:"Gahanna", address:"1375 Stoneridge Dr, Gahanna", lat:40.0287, lng:-82.863, phone:"(614) 751-9274" },
+  { id:11, name:"Powell", address:"9632 Sawmill Pkwy, Powell", lat:40.1579, lng:-83.0872, phone:"(614) 751-9274" },
+  { id:12, name:"Pickerington", address:"1166 Hill Rd N, Pickerington", lat:39.9061, lng:-82.7449, phone:"(614) 751-9274" },
+  { id:13, name:"Etna", address:"13375 National Rd, Etna", lat:39.9577, lng:-82.6818, phone:"(614) 751-9274" },
+  { id:14, name:"Lancaster", address:"1555 N Memorial Dr, Lancaster", lat:39.7378, lng:-82.5994, phone:"(614) 751-9274" },
+  { id:15, name:"Newark", address:"1260 N 21st St, Newark", lat:40.0781, lng:-82.3913, phone:"(614) 751-9274" },
+  { id:16, name:"Delaware", address:"1271 Sunbury Rd, Delaware", lat:40.2728, lng:-83.0405, phone:"(614) 751-9274" },
+  { id:17, name:"Marysville", address:"16540 Square Dr, Marysville", lat:40.2315, lng:-83.3674, phone:"(614) 751-9274" },
+];
+
+let userLat = null, userLng = null, sortBy = "busyness", expandedId = null, searchText = "";
+
+function getBusyness(hour, dow, seed) {
+  const hp = [0,0,0,0,0,0,0,15,25,45,65,75,80,70,60,50,55,65,55,30,10,0,0,0];
+  const dm = [1.1,0.6,0.65,0.7,0.75,0.85,1.3];
+  const lv = ((seed*7+13)%30-15)/100;
+  let b = (hp[hour]||0) * dm[dow] * (1+lv);
+  b += ((seed*17+new Date().getMinutes()*3)%20-10);
+  return Math.max(0, Math.min(100, Math.round(b)));
+}
+
+function getLabel(l) {
+  if(l===0) return {text:"Closed",color:"#64748b",bg:"#f1f5f9",icon:"🔒"};
+  if(l<=20) return {text:"Not Busy",color:"#059669",bg:"#ecfdf5",icon:"🟢"};
+  if(l<=40) return {text:"A Little Busy",color:"#16a34a",bg:"#f0fdf4",icon:"🟡"};
+  if(l<=60) return {text:"Moderate",color:"#d97706",bg:"#fffbeb",icon:"🟠"};
+  if(l<=80) return {text:"Busy",color:"#ea580c",bg:"#fff7ed",icon:"🔴"};
+  return {text:"Very Busy",color:"#dc2626",bg:"#fef2f2",icon:"🔴"};
+}
+
+function barColor(l) {
+  if(l<=20) return "#34d399"; if(l<=40) return "#6ee7b7";
+  if(l<=60) return "#fbbf24"; if(l<=80) return "#fb923c"; return "#f87171";
+}
+
+function dist(lat1,lon1,lat2,lon2) {
+  const R=3959, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function forecast(dow, seed) {
+  const hrs = [];
+  for(let h=7;h<=20;h++) {
+    const lbl = h<=12 ? `${h===12?12:h}${h<12?'a':'p'}` : `${h-12}p`;
+    hrs.push({hour:h, label:lbl, level:getBusyness(h,dow,seed)});
+  }
+  return hrs;
+}
+
+function render() {
+  const now = new Date();
+  const hour = now.getHours(), dow = now.getDay();
+  const isOpen = dow===0 ? (hour>=7&&hour<19) : (hour>=7&&hour<20);
+
+  document.getElementById("subtitle").textContent = isOpen ? "Find the least busy wash near you" : "Locations are currently closed";
+  document.getElementById("timeInfo").textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}) + " · " + now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + " · Hours: Mon–Sat 7a–8p, Sun 7a–7p";
+
+  let data = LOCATIONS.map(loc => {
+    const b = isOpen ? getBusyness(hour, dow, loc.id) : 0;
+    const d = (userLat!==null) ? dist(userLat,userLng,loc.lat,loc.lng) : null;
+    return {...loc, busyness:b, distance:d};
+  });
+
+  const filtered = data.filter(l =>
+    l.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    l.address.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const sorted = [...filtered].sort((a,b) => {
+    if(sortBy==="distance" && a.distance!==null) return a.distance-b.distance;
+    if(sortBy==="busyness") return a.busyness-b.busyness;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Best banner
+  const best = [...data].filter(l=>l.busyness>0).sort((a,b)=>a.busyness-b.busyness)[0];
+  const banner = document.getElementById("bestBanner");
+  if(isOpen && best) {
+    banner.style.display = "flex";
+    const s = getLabel(best.busyness);
+    document.getElementById("bestName").innerHTML = best.name + (best.distance!==null ? `<span class="dist">${best.distance.toFixed(1)} mi away</span>` : '');
+    document.getElementById("bestWait").textContent = `~${Math.max(1,Math.round(best.busyness/10))} min wait · ${s.text}`;
+  } else { banner.style.display = "none"; }
+
+  // Cards
+  const container = document.getElementById("cards");
+  container.innerHTML = "";
+  const empty = document.getElementById("emptyMsg");
+  empty.style.display = sorted.length === 0 ? "block" : "none";
+
+  sorted.forEach(loc => {
+    const s = getLabel(loc.busyness);
+    const isExp = expandedId === loc.id;
+    const card = document.createElement("div");
+    card.className = "card" + (isExp ? " expanded" : "");
+    card.onclick = () => { expandedId = expandedId===loc.id ? null : loc.id; render(); };
+
+    let html = `
+      <div class="card-top">
+        <div class="card-left">
+          <div class="card-name-row">
+            <span class="card-name">${loc.name}</span>
+            ${loc.distance!==null ? `<span class="card-dist">${loc.distance.toFixed(1)} mi</span>` : ''}
+          </div>
+          <p class="card-addr">${loc.address}</p>
+        </div>
+        <div class="card-right">
+          <span class="status-badge" style="color:${s.color};background:${s.bg}">${s.icon} ${s.text}</span>
+          ${loc.busyness>0 ? `<span class="wait-est">~${Math.max(1,Math.round(loc.busyness/10))} min wait</span>` : ''}
+        </div>
+      </div>`;
+
+    if(loc.busyness > 0) {
+      html += `<div class="busy-bar"><div class="busy-bar-fill" style="width:${loc.busyness}%;background:linear-gradient(90deg,${barColor(loc.busyness)},${barColor(Math.min(100,loc.busyness+15))})"></div></div>`;
+    }
+
+    // Expanded
+    const fc = forecast(dow, loc.id);
+    const currentHour = hour;
+    const bestHours = fc.filter(f=>f.level>0).sort((a,b)=>a.level-b.level);
+
+    html += `<div class="expanded-section">
+      <p class="forecast-label">Today's Forecast</p>
+      <div class="forecast-bars">
+        ${fc.map(f => {
+          const isNow = f.hour===currentHour;
+          return `<div class="forecast-col">
+            <div class="forecast-bar${isNow?' now':''}" style="height:${Math.max(4,f.level*0.6)}px;background:${isNow?'linear-gradient(180deg,#292524,#57534e)':`linear-gradient(180deg,${barColor(f.level)}88,${barColor(f.level)})`}">
+              ${isNow?'<span class="now-label">NOW</span>':''}
+            </div>
+            <span class="forecast-hour${isNow?' now':''}">${f.label}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      ${bestHours.length>=2 ? `<div class="best-time-tip">💡 Best time today: ${bestHours[0].label} – ${bestHours[1].label}</div>` : ''}
+      <div class="card-actions">
+        <a class="card-action" href="tel:${loc.phone}" onclick="event.stopPropagation()">📞 ${loc.phone}</a>
+        <a class="card-action" href="https://maps.google.com/?q=${encodeURIComponent(loc.address)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ Directions</a>
+      </div>
+    </div>`;
+
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+
+// Sort buttons
+document.getElementById("sortBtns").addEventListener("click", e => {
+  if(e.target.dataset.sort) {
+    sortBy = e.target.dataset.sort;
+    document.querySelectorAll(".sort-btn").forEach(b => b.classList.toggle("active", b.dataset.sort===sortBy));
+    render();
+  }
+});
+
+// Search
+document.getElementById("searchInput").addEventListener("input", e => { searchText = e.target.value; render(); });
+
+// Geolocation
+if(navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    userLat = pos.coords.latitude;
+    userLng = pos.coords.longitude;
+    // Add distance sort button
+    const distBtn = document.createElement("button");
+    distBtn.className = "sort-btn"; distBtn.dataset.sort = "distance"; distBtn.textContent = "Nearest";
+    document.getElementById("sortBtns").prepend(distBtn);
+    sortBy = "distance";
+    document.querySelectorAll(".sort-btn").forEach(b => b.classList.toggle("active", b.dataset.sort===sortBy));
+    render();
+  }, () => {
+    document.getElementById("geoWarning").classList.add("show");
+  }, {timeout:8000});
+}
+
+// Initial render + auto-refresh
+render();
+setInterval(render, 60000);
+</script>
+</body>
+</html>
